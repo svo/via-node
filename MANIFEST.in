@@ -1,0 +1,2 @@
+graft src/via_node/resources
+include src/via_node/py.typed
