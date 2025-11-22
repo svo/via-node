@@ -19,6 +19,8 @@ jobs:
       - id: checkout
         name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - id: docker-login
         name: Docker:Login
@@ -77,6 +79,8 @@ jobs:
       - id: checkout
         name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - id: docker-login
         name: Docker:Login
@@ -109,6 +113,8 @@ jobs:
       - id: checkout
         name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - id: docker-login
         name: Docker:Login
@@ -138,6 +144,8 @@ jobs:
       - id: checkout
         name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - id: docker-login
         name: Docker:Login
@@ -170,6 +178,8 @@ jobs:
       - id: checkout
         name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - id: docker-login
         name: Docker:Login
