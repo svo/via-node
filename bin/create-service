@@ -8,6 +8,7 @@ version=$(python -m setuptools_scm | sed 's/+/./g') &&
 
 cp build/openapi.json build/"$version".json &&
 
+packer init infrastructure/packer &&
 packer build -color=false -var "whl=${whl}" -var "version=${version}" infrastructure/packer/service.pkr.hcl &&
 
 echo "VERSION=$version"
