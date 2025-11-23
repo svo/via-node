@@ -38,4 +38,22 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       }
     end
   end
+
+  config.vm.define 'graph' do |graph|
+    graph.vm.provider :docker do |docker|
+      docker.image = "arangodb/arangodb:latest"
+      docker.pull = true
+      docker.ports = ["8082:8529"]
+      docker.env = {
+        "ARANGO_NO_AUTH" => "1"
+      }
+    end
+
+    if Vagrant.has_plugin?("vagrant-cachier")
+      graph.cache.scope = :machine
+      graph.cache.enable :apt
+    end
+
+    graph.vm.hostname = 'via-node-graph'
+  end
 end

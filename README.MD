@@ -4,6 +4,128 @@
 [![Build Development](https://github.com/svo/via-node/actions/workflows/development.yml/badge.svg)](https://github.com/svo/via-node/actions/workflows/development.yml)
 [![Build Service](https://github.com/svo/via-node/actions/workflows/service.yml/badge.svg)](https://github.com/svo/via-node/actions/workflows/service.yml)
 
+## Overview
+
+**Via Node** is a network topology discovery and mapping system that captures and visualizes relationships between domains and network ports. It uses ArangoDB's graph database capabilities to model network infrastructure as a directed graph, enabling powerful queries and traversals for network analysis, security auditing, and infrastructure documentation.
+
+### Key Features
+
+- **Network Topology Mapping**: Discover and map relationships between domains and their exposed ports
+- **Graph Database Backend**: Leverages ArangoDB for efficient graph storage and traversal
+- **Protocol-Aware**: Distinguishes between TCP and UDP ports for accurate network modeling
+- **CLI Interface**: Simple command-line tools for network topology management
+- **REST API**: FastAPI-based web service for programmatic access
+- **Clean Architecture**: Hexagonal architecture with DDD principles for maintainability
+
+### Use Cases
+
+- **Security Auditing**: Track which domains expose which services
+- **Network Documentation**: Maintain an up-to-date map of your network infrastructure
+- **Change Detection**: Monitor when new ports are opened or services change protocols
+- **Dependency Mapping**: Visualize service dependencies across your infrastructure
+- **Compliance**: Document network topology for regulatory requirements
+
+---
+
+## ⚠️ Security Warning
+
+**IMPORTANT: The default configuration is for DEVELOPMENT ONLY**
+
+This project includes:
+- ❌ No database authentication (`ARANGO_NO_AUTH=1`)
+- ❌ Unencrypted HTTP connections (not HTTPS)
+- ❌ Exposed database port on Docker bridge network
+- ❌ Empty default passwords
+
+**NEVER use the default configuration in production!**
+
+For production deployment, you MUST:
+1. Enable ArangoDB authentication
+2. Use TLS/SSL for all connections
+3. Configure proper network security groups
+4. Use secure secret management (e.g., Vault, AWS Secrets Manager)
+5. Follow security best practices for your environment
+
+---
+
+## Quick Start
+
+### Prerequisites
+
+- Docker (28.0.2+)
+- Vagrant (2.4.3+)
+- Colima (0.8.1+) or Docker Desktop
+
+### Setup
+
+```bash
+# Start Colima with required resources
+colima start --cpu 2 --memory 2 --vm-type=vz --mount-type=virtiofs --dns 8.8.8.8
+
+# Start Vagrant environment (includes ArangoDB)
+vagrant up
+vagrant provision
+
+# SSH into development environment
+vagrant ssh
+```
+
+### Using the CLI
+
+```bash
+# Add a domain-to-port relationship
+via-node add-edge --domain example.com --port 443 --protocol TCP
+
+# Add UDP port
+via-node add-edge --domain example.com --port 53 --protocol UDP
+
+# Short form
+via-node add-edge -d api.example.com -p 8080
+
+# View help
+via-node --help
+via-node add-edge --help
+```
+
+### Using Tox
+
+```bash
+# Run via CLI environment
+tox -e cli -- add-edge --domain example.com --port 443
+
+# Run all tests
+tox
+
+# Run tests in watch mode
+tox -e watch
+
+# Format code
+tox -e format
+```
+
+### Graph Data Model
+
+Via Node models network topology as a directed graph:
+
+```
+┌─────────────┐         ┌──────────────┐
+│ DNS Record  │──edge──>│    Port      │
+│             │         │              │
+│ example.com │         │  443_TCP     │
+└─────────────┘         └──────────────┘
+```
+
+**Vertices:**
+- **DNS Records**: Domain names (e.g., `example.com`)
+- **Ports**: Port number + protocol (e.g., `443_TCP`, `80_UDP`)
+
+**Edges:**
+- **domain_to_port**: Links a domain to an exposed port
+
+**Note:** Ports are uniquely identified by both number AND protocol, so `80_TCP` and `80_UDP` are distinct vertices.
+
+---
+
 ## Development
 
 ### Tested Configuration

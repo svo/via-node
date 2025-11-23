@@ -6,8 +6,8 @@ if __name__ == "__main__":
             use_scm_version={"version_scheme": "no-guess-dev"},
             entry_points={
                 "console_scripts": [
-                    "via-node=via_node.interface.api.main:run",
-                    "via-node-cli=via_node.interface.cli.main:run",
+                    "via-node=via_node.interface.cli.main:cli",
+                    "via-node-api=via_node.interface.api.main:run",
                 ]
             },
         )

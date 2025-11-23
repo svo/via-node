@@ -24,6 +24,12 @@ class ApplicationSettings(BaseSettings):
     password: str = "password"
     reload: bool = False
     host: str = ""
+    arango_host: str = "172.17.0.1"
+    arango_port: str = "8082"
+    arango_database: str = "network_topology"
+    arango_username: str = "root"
+    arango_password: str = ""
+    arango_graph_name: str = "network_graph"
 
     model_config = SettingsConfigDict(
         env_file=".env",
