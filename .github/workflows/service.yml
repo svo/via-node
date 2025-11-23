@@ -47,7 +47,9 @@ jobs:
         name: Docker:Build
         shell: bash
         run: |
-          ./build-service.sh | tail -n1 >> $GITHUB_OUTPUT
+          set -o pipefail
+          ./build-service.sh 2>&1 | tee /tmp/build.log
+          tail -n1 /tmp/build.log >> $GITHUB_OUTPUT
 
       - id: upload-openapi-artifact
         name: OpenAPI:Upload
