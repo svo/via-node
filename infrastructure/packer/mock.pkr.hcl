@@ -1,3 +1,12 @@
+packer {
+  required_plugins {
+    docker = {
+      version = ">= 1.0.8"
+      source  = "github.com/hashicorp/docker"
+    }
+  }
+}
+
 source "docker" "arm64" {
   commit      = "true"
   image       = "node:18-alpine"
