@@ -105,24 +105,95 @@ tox -e format
 
 ### Graph Data Model
 
-Via Node models network topology as a directed graph:
+Via Node models network topology as a **Directed Property Graph with Distinct Vertex Types**. Each entity type (hosts, services, ports, DNS records) is stored in its own collection with specific properties and constraints.
 
 ```
-┌─────────────┐         ┌──────────────┐
-│ DNS Record  │──edge──>│    Port      │
-│             │         │              │
-│ example.com │         │  443_TCP     │
-└─────────────┘         └──────────────┘
+┌──────────────┐      ┌──────────────┐      ┌──────────────┐
+│    Hosts     │      │   Services   │      │    Ports     │
+│              │      │              │      │              │
+│ Properties:  │      │ Properties:  │      │ Properties:  │
+│ - ip_addr    │      │ - name       │      │ - port_num   │
+│ - hostname   │      │ - version    │      │ - protocol   │
+│ - os_type    │      │ - status     │      │ - state      │
+└──────────────┘      └──────────────┘      └──────────────┘
+       ↑                     ↓ ↓                     ↑
+       │         runs_on     │ │      uses_port      │
+       │                     │ │                     │
+       └─────────────────────┴─┴─────────────────────┘
+
+┌──────────────┐
+│ DNS Records  │
+│              │
+│ Properties:  │
+│ - domain     │
+│ - ttl        │
+│ - type       │
+└──────────────┘
+       │
+       │ resolves_to
+       ↓
+    (Hosts)
 ```
 
-**Vertices:**
-- **DNS Records**: Domain names (e.g., `example.com`)
-- **Ports**: Port number + protocol (e.g., `443_TCP`, `80_UDP`)
+**Vertex Collections (Distinct Types):**
 
-**Edges:**
-- **domain_to_port**: Links a domain to an exposed port
+1. **hosts** - Physical or virtual machines
+   - `_key`: Unique identifier (IP address or hostname)
+   - `ip_address`: IPv4 or IPv6 address
+   - `hostname`: FQDN or hostname
+   - `os_type`: Operating system
+   - `created_at`, `updated_at`: Timestamps
+   - `metadata`: Extensible properties
 
-**Note:** Ports are uniquely identified by both number AND protocol, so `80_TCP` and `80_UDP` are distinct vertices.
+2. **services** - Running applications or services
+   - `_key`: Unique identifier (service name + host)
+   - `name`: Service or application name
+   - `version`: Service version
+   - `status`: Current state (running, stopped, etc.)
+   - `parent_host`: Reference to host running this service
+   - `created_at`, `updated_at`: Timestamps
+   - `metadata`: Extensible properties
+
+3. **ports** - Network ports with protocol
+   - `_key`: Composite key (port_number_protocol, e.g., "443_TCP")
+   - `port_number`: Port number (1-65535)
+   - `protocol`: TCP, UDP, ICMP, etc.
+   - `state`: Port state (open, listening, closed)
+   - `created_at`, `updated_at`: Timestamps
+   - `metadata`: Extensible properties
+
+4. **dns_records** - Domain name system records
+   - `_key`: Domain name (unique)
+   - `domain_name`: Fully qualified domain name
+   - `record_type`: A, AAAA, CNAME, MX, etc.
+   - `ttl`: Time to live
+   - `resolved_ips`: Array of IP addresses
+   - `created_at`, `updated_at`: Timestamps
+   - `metadata`: Extensible properties
+
+**Edge Collections (Distinct Types):**
+
+1. **host_listens_on_port** - hosts → ports
+   - Host is listening on this port
+
+2. **service_runs_on_host** - services → hosts
+   - Service is running on this host
+
+3. **service_uses_port** - services → ports
+   - Service uses this port for communication
+
+4. **dns_resolves_to_host** - dns_records → hosts
+   - Domain name resolves to this host IP
+
+5. **service_connects_to_service** - services → services
+   - Service-to-service communication or dependency
+
+**Why Distinct Vertex Types:**
+1. **Data Integrity**: Database enforces valid relationships (no invalid edges)
+2. **Type-Specific Properties**: Each entity type has appropriate attributes
+3. **Query Clarity**: Graph structure documents entity semantics
+4. **Scalability**: Can optimize indexes and storage per type
+5. **Extensibility**: Easy to add new types (firewalls, load balancers, networks)
 
 ---
 
