@@ -70,37 +70,64 @@ vagrant provision
 vagrant ssh
 ```
 
-### Using the CLI
+### Using Tox
+
+#### Running the CLI
 
 ```bash
 # Add a domain-to-port relationship
-via-node add-edge --domain example.com --port 443 --protocol TCP
+tox -e cli -- add-edge --domain example.com --port 443 --protocol TCP
+tox -e cli -- add-edge --domain example.com --port 53 --protocol UDP
 
-# Add UDP port
-via-node add-edge --domain example.com --port 53 --protocol UDP
+# Add a host (physical or virtual machine)
+tox -e cli -- add-host --ip 192.168.1.1 --hostname web.example.com --os-type Linux
+
+# Add a DNS resolution edge (domain resolves to host IP)
+tox -e cli -- add-dns-resolves-to-host --domain example.com --ip 192.168.1.1
 
 # Short form
-via-node add-edge -d api.example.com -p 8080
+tox -e cli -- add-edge -d api.example.com -p 8080
+tox -e cli -- add-host -i 10.0.0.5 -h api.example.com -o Ubuntu
+tox -e cli -- add-dns-resolves-to-host -d api.example.com -i 10.0.0.5
 
 # View help
-via-node --help
-via-node add-edge --help
+tox -e cli -- --help
+tox -e cli -- add-edge --help
+tox -e cli -- add-host --help
+tox -e cli -- add-dns-resolves-to-host --help
 ```
 
-### Using Tox
+#### Running Tests
 
 ```bash
-# Run via CLI environment
-tox -e cli -- add-edge --domain example.com --port 443
-
-# Run all tests
+# Run all tests with coverage and code quality checks
 tox
 
-# Run tests in watch mode
+# Run only the test suite (no linting)
+tox -e default -k test
+
+# Run tests in watch mode (auto-run on file changes)
 tox -e watch
 
-# Format code
+# Run specific test file
+tox -e default -- tests/via_node/domain/model/test_host.py
+
+# Run tests matching a pattern
+tox -e default -- -k "test_host" -v
+```
+
+#### Code Quality and Formatting
+
+```bash
+# Format code with black
 tox -e format
+
+# Run all linters (flake8, mypy, bandit, xenon, semgrep)
+tox -e lint
+
+# Run specific linter
+tox -e flake8
+tox -e mypy
 ```
 
 ### Graph Data Model

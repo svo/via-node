@@ -1,6 +1,8 @@
 from lagom import Container
 
 from via_node.application.use_case.add_domain_port_edge_use_case import AddDomainPortEdgeUseCase
+from via_node.application.use_case.add_host_use_case import AddHostUseCase
+from via_node.application.use_case.add_dns_resolves_to_host_edge_use_case import AddDnsResolvesToHostEdgeUseCase
 from via_node.domain.repository.network_topology_repository import NetworkTopologyRepository
 from via_node.infrastructure.persistence.arango.arango_network_topology_repository import (
     ArangoNetworkTopologyRepository,
@@ -20,9 +22,12 @@ def create_container() -> Container:
         username=settings.arango_username,
         password=settings.arango_password,
         graph_name=settings.arango_graph_name,
+        auto_create_database=settings.arango_auto_create_database,
     )
 
     container[NetworkTopologyRepository] = lambda: repository  # type: ignore[type-abstract]
     container[AddDomainPortEdgeUseCase] = AddDomainPortEdgeUseCase
+    container[AddHostUseCase] = AddHostUseCase
+    container[AddDnsResolvesToHostEdgeUseCase] = AddDnsResolvesToHostEdgeUseCase
 
     return container

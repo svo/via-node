@@ -6,6 +6,7 @@ from arango.database import StandardDatabase
 from arango.exceptions import DocumentInsertError, GraphCreateError
 
 from via_node.domain.model.dns_record import DnsRecord
+from via_node.domain.model.host import Host
 from via_node.domain.model.network_topology_edge import NetworkTopologyEdge
 from via_node.domain.model.port import Port
 from via_node.domain.repository.network_topology_repository import NetworkTopologyRepository
@@ -20,6 +21,7 @@ class ArangoNetworkTopologyRepository(NetworkTopologyRepository):
         username: str,
         password: str,
         graph_name: str,
+        auto_create_database: bool = True,
     ) -> None:
         self._host = host
         self._port = port
@@ -27,17 +29,33 @@ class ArangoNetworkTopologyRepository(NetworkTopologyRepository):
         self._username = username
         self._password = password
         self._graph_name = graph_name
+        self._auto_create_database = auto_create_database
 
         self._dns_collection_name = "dns_records"
         self._port_collection_name = "ports"
+        self._hosts_collection_name = "hosts"
         self._edge_collection_name = "domain_port_edges"
+        self._dns_resolves_to_host_edge_collection_name = "dns_resolves_to_host_edges"
 
+        self._client = ArangoClient(hosts=f"http://{self._host}:{self._port}")
         self._db = self._initialize_connection()
         self._initialize_graph()
 
     def _initialize_connection(self) -> StandardDatabase:
-        client = ArangoClient(hosts=f"http://{self._host}:{self._port}")
-        return client.db(self._database_name, username=self._username, password=self._password)
+        db = self._client.db(self._database_name, username=self._username, password=self._password)
+
+        if self._auto_create_database:
+            try:
+                db.collections()
+            except Exception as e:
+                if "1228" in str(e):
+                    sys_db = self._client.db("_system", username=self._username, password=self._password)
+                    sys_db.create_database(self._database_name)
+                    db = self._client.db(self._database_name, username=self._username, password=self._password)
+                else:
+                    raise
+
+        return db
 
     def _initialize_graph(self) -> None:
         if self._db.has_graph(self._graph_name):
@@ -48,11 +66,18 @@ class ArangoNetworkTopologyRepository(NetworkTopologyRepository):
 
             graph.create_vertex_collection(self._dns_collection_name)  # type: ignore[union-attr]
             graph.create_vertex_collection(self._port_collection_name)  # type: ignore[union-attr]
+            graph.create_vertex_collection(self._hosts_collection_name)  # type: ignore[union-attr]
 
             graph.create_edge_definition(  # type: ignore[union-attr]
                 edge_collection=self._edge_collection_name,
                 from_vertex_collections=[self._dns_collection_name],
                 to_vertex_collections=[self._port_collection_name],
+            )
+
+            graph.create_edge_definition(  # type: ignore[union-attr]
+                edge_collection=self._dns_resolves_to_host_edge_collection_name,
+                from_vertex_collections=[self._dns_collection_name],
+                to_vertex_collections=[self._hosts_collection_name],
             )
         except GraphCreateError:
             pass
@@ -99,11 +124,19 @@ class ArangoNetworkTopologyRepository(NetworkTopologyRepository):
 
     def create_edge(self, edge: NetworkTopologyEdge) -> NetworkTopologyEdge:
         graph = self._db.graph(self._graph_name)
-        edge_collection = graph.edge_collection(self._edge_collection_name)
+
+        if edge.edge_type == "dns_resolves_to_host":
+            edge_collection = graph.edge_collection(self._dns_resolves_to_host_edge_collection_name)
+            from_vertex = f"{self._dns_collection_name}/{edge.source_id}"
+            to_vertex = f"{self._hosts_collection_name}/{edge.target_id}"
+        else:
+            edge_collection = graph.edge_collection(self._edge_collection_name)
+            from_vertex = f"{self._dns_collection_name}/{edge.source_id}"
+            to_vertex = f"{self._port_collection_name}/{edge.target_id}"
 
         document = {
-            "_from": f"{self._dns_collection_name}/{edge.source_id}",
-            "_to": f"{self._port_collection_name}/{edge.target_id}",
+            "_from": from_vertex,
+            "_to": to_vertex,
             "source_id": edge.source_id,
             "target_id": edge.target_id,
             "edge_type": edge.edge_type,
@@ -150,6 +183,45 @@ class ArangoNetworkTopologyRepository(NetworkTopologyRepository):
             port_number=document["port_number"],  # type: ignore[index]
             protocol=document["protocol"],  # type: ignore[index]
             service_name=document.get("service_name"),  # type: ignore[union-attr]
+            created_at=datetime.fromisoformat(document["created_at"]),  # type: ignore[index]
+            updated_at=datetime.fromisoformat(document["updated_at"]),  # type: ignore[index]
+        )
+
+    def create_or_update_host(self, host: Host) -> Host:
+        graph = self._db.graph(self._graph_name)
+        collection = graph.vertex_collection(self._hosts_collection_name)
+
+        document = {
+            "_key": host.ip_address,
+            "ip_address": host.ip_address,
+            "hostname": host.hostname,
+            "os_type": host.os_type,
+            "metadata": host.metadata,
+            "created_at": host.created_at.isoformat(),
+            "updated_at": host.updated_at.isoformat(),
+        }
+
+        try:
+            collection.insert(document)
+        except DocumentInsertError:
+            collection.replace(document)
+
+        return host
+
+    def get_host(self, ip_address: str) -> Optional[Host]:
+        graph = self._db.graph(self._graph_name)
+        collection = graph.vertex_collection(self._hosts_collection_name)
+
+        if not collection.has(ip_address):
+            return None
+
+        document = collection.get(ip_address)
+
+        return Host(
+            ip_address=document["ip_address"],  # type: ignore[index]
+            hostname=document["hostname"],  # type: ignore[index]
+            os_type=document["os_type"],  # type: ignore[index]
+            metadata=document.get("metadata"),  # type: ignore[union-attr]
             created_at=datetime.fromisoformat(document["created_at"]),  # type: ignore[index]
             updated_at=datetime.fromisoformat(document["updated_at"]),  # type: ignore[index]
         )

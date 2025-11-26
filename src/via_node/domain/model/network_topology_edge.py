@@ -30,7 +30,7 @@ class NetworkTopologyEdge(BaseModel):
     @field_validator("edge_type")
     @classmethod
     def validate_edge_type(cls, edge_type: str) -> str:
-        valid_types = {"domain_to_port"}
+        valid_types = {"domain_to_port", "dns_resolves_to_host"}
         edge_type_lower = edge_type.lower()
 
         if edge_type_lower not in valid_types:

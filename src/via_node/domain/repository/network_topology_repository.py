@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Optional
 
 from via_node.domain.model.dns_record import DnsRecord
+from via_node.domain.model.host import Host
 from via_node.domain.model.network_topology_edge import NetworkTopologyEdge
 from via_node.domain.model.port import Port
 
@@ -25,4 +26,12 @@ class NetworkTopologyRepository(ABC):
 
     @abstractmethod
     def get_port(self, port_number: int, protocol: str) -> Optional[Port]:
+        raise NotImplementedError()
+
+    @abstractmethod
+    def create_or_update_host(self, host: Host) -> Host:
+        raise NotImplementedError()
+
+    @abstractmethod
+    def get_host(self, ip_address: str) -> Optional[Host]:
         raise NotImplementedError()

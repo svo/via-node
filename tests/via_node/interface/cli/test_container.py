@@ -32,6 +32,7 @@ class TestContainer:
         mock_settings_instance.arango_username = "testuser"
         mock_settings_instance.arango_password = "testpass"
         mock_settings_instance.arango_graph_name = "testgraph"
+        mock_settings_instance.arango_auto_create_database = True
 
         create_container()
 
@@ -51,6 +52,7 @@ class TestContainer:
         mock_settings_instance.arango_username = "testuser"
         mock_settings_instance.arango_password = "testpass"
         mock_settings_instance.arango_graph_name = "testgraph"
+        mock_settings_instance.arango_auto_create_database = True
 
         container = create_container()
         container[NetworkTopologyRepository]
@@ -62,4 +64,5 @@ class TestContainer:
             username="testuser",
             password="testpass",
             graph_name="testgraph",
+            auto_create_database=True,
         )

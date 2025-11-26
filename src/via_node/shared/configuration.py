@@ -30,6 +30,7 @@ class ApplicationSettings(BaseSettings):
     arango_username: str = "root"
     arango_password: str = ""
     arango_graph_name: str = "network_graph"
+    arango_auto_create_database: bool = True
 
     model_config = SettingsConfigDict(
         env_file=".env",
