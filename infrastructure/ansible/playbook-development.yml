@@ -62,6 +62,7 @@
     - packer
     - pyscaffold
     - tox
+    - nmap
     - claude-code
     - shellcheck
     - ansible-lint

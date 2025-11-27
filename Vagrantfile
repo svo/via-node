@@ -43,7 +43,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     graph.vm.provider :docker do |docker|
       docker.image = "arangodb/arangodb:latest"
       docker.pull = true
-      docker.ports = ["8082:8529"]
+      docker.ports = ["8083:8529"]
       docker.env = {
         "ARANGO_NO_AUTH" => "1"
       }

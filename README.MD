@@ -74,6 +74,8 @@ vagrant ssh
 
 #### Running the CLI
 
+##### Manual Topology Entry
+
 ```bash
 # Add a domain-to-port relationship
 tox -e cli -- add-edge --domain example.com --port 443 --protocol TCP
@@ -89,9 +91,60 @@ tox -e cli -- add-dns-resolves-to-host --domain example.com --ip 192.168.1.1
 tox -e cli -- add-edge -d api.example.com -p 8080
 tox -e cli -- add-host -i 10.0.0.5 -h api.example.com -o Ubuntu
 tox -e cli -- add-dns-resolves-to-host -d api.example.com -i 10.0.0.5
+```
+
+##### DNS Discovery
+
+```bash
+# Discover DNS records for a domain
+tox -e cli -- discover-dns --domain example.com
+
+# Discover specific record types
+tox -e cli -- discover-dns --domain example.com --type A,AAAA,MX
+
+# Short form with specific types
+tox -e cli -- discover-dns -d api.example.com -t A -t CNAME
 
 # View help
+tox -e cli -- discover-dns --help
+```
+
+##### Subdomain Discovery
+
+```bash
+# Discover common subdomains for a domain
+tox -e cli -- discover-subdomains --domain example.com
+
+# Short form
+tox -e cli -- discover-subdomains -d example.com
+
+# View help
+tox -e cli -- discover-subdomains --help
+```
+
+##### Port Scanning
+
+```bash
+# Scan ports on a target host
+tox -e cli -- scan-ports --target 192.168.1.1 --ports 1-1000
+
+# Scan specific ports
+tox -e cli -- scan-ports --target 192.168.1.1 --ports 22,80,443
+
+# Short form
+tox -e cli -- scan-ports -t 10.0.0.1 -p 1-65535
+
+# View help
+tox -e cli -- scan-ports --help
+```
+
+##### General Commands
+
+```bash
+# View all available commands
 tox -e cli -- --help
+
+# View help for any command
 tox -e cli -- add-edge --help
 tox -e cli -- add-host --help
 tox -e cli -- add-dns-resolves-to-host --help

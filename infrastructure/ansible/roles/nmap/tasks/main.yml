@@ -1,0 +1,10 @@
+- name: Install nmap
+  ansible.builtin.apt:
+    pkg: nmap
+  become: true
+
+- name: Verify nmap installation
+  ansible.builtin.command:
+    cmd: nmap --version
+  register: nmap_version
+  changed_when: false

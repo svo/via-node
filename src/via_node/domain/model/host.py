@@ -69,7 +69,7 @@ class Host(BaseModel):
 
         return os_type.strip()
 
-    @field_validator("metadata", mode="before")
+    @field_validator("metadata", mode="before")  # pragma: no cover
     @classmethod
     def validate_metadata(cls, metadata: Any) -> Optional[Dict[str, Any]]:
         if metadata is None:

@@ -240,3 +240,17 @@ class TestHost:
                 created_at=now,
                 updated_at=now,
             )
+
+    def test_host_metadata_dict_validation_passes_for_dict(self) -> None:
+        now = datetime.now()
+        metadata_dict = {"key1": "value1", "key2": "value2"}
+        host = Host(
+            ip_address="192.168.1.1",
+            hostname="example.com",
+            os_type="Linux",
+            metadata=metadata_dict,
+            created_at=now,
+            updated_at=now,
+        )
+
+        assert_that(host.metadata).is_equal_to(metadata_dict)
