@@ -112,15 +112,42 @@ tox -e cli -- discover-dns --help
 ##### Subdomain Discovery
 
 ```bash
-# Discover common subdomains for a domain
+# Discover common subdomains for a domain (uses built-in 108-subdomain list)
 tox -e cli -- discover-subdomains --domain example.com
 
 # Short form
 tox -e cli -- discover-subdomains -d example.com
 
+# Use custom subdomain dictionary file
+tox -e cli -- discover-subdomains --domain example.com --dictionary-file /path/to/subdomains.txt
+
+# Short form with dictionary file
+tox -e cli -- discover-subdomains -d example.com -f subdomains.txt
+
 # View help
 tox -e cli -- discover-subdomains --help
 ```
+
+###### Custom Dictionary File Format
+
+The `--dictionary-file` option accepts a plain text file with one subdomain per line:
+
+```
+# Example subdomains.txt
+api
+admin
+staging
+dev
+# Comments are ignored
+cdn
+backup
+```
+
+Features:
+- One subdomain prefix per line
+- Empty lines are ignored
+- Lines starting with `#` are treated as comments and ignored
+- Whitespace is automatically trimmed from each line
 
 ##### Port Scanning
 

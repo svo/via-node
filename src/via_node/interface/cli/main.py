@@ -131,23 +131,64 @@ def _display_discoveries(domain: str, discoveries: list) -> None:
 
 @cli.command()
 @click.option("--domain", "-d", required=True, help="Domain to discover subdomains for")
-def discover_subdomains(domain: str) -> None:
+@click.option(
+    "--dictionary-file",
+    "-f",
+    type=click.Path(exists=True),
+    help="Path to dictionary file with subdomains (one per line)",
+)
+def discover_subdomains(domain: str, dictionary_file: Optional[str]) -> None:
     try:
         container = create_container()
-        use_case = container[DiscoverSubdomainsUseCase]
-
+        use_case = _create_subdomain_use_case(container, dictionary_file)
         results = use_case.execute(domain_name=domain)
-
-        click.echo(f"✓ Discovered {len(results)} subdomain(s) for {domain}:")
-        for result in results:
-            values_str = ", ".join(result.values)
-            click.echo(f"  {result.domain_name}: {values_str}")
+        _display_subdomain_results(domain, results)
     except ValueError as e:
         click.echo(f"✗ Validation error: {str(e)}", err=True)
         raise click.Abort()
     except Exception as e:
         click.echo(f"✗ Error: {str(e)}", err=True)
         raise click.Abort()
+
+
+def _create_subdomain_use_case(
+    container: object,
+    dictionary_file: Optional[str],
+) -> DiscoverSubdomainsUseCase:
+    if not dictionary_file:
+        return container[DiscoverSubdomainsUseCase]  # type: ignore
+
+    subdomains = _load_subdomains_from_file(dictionary_file)
+    if not subdomains:
+        click.echo(f"✗ Dictionary file is empty: {dictionary_file}", err=True)
+        raise click.Abort()
+
+    from via_node.domain.repository.network_topology_repository import (
+        NetworkTopologyRepository,
+    )
+
+    repository = container[NetworkTopologyRepository]  # type: ignore
+    return DiscoverSubdomainsUseCase(repository=repository, subdomains=subdomains)
+
+
+def _display_subdomain_results(domain: str, results: List) -> None:
+    click.echo(f"✓ Discovered {len(results)} subdomain(s) for {domain}:")
+    for result in results:
+        values_str = ", ".join(result.values)
+        click.echo(f"  {result.domain_name}: {values_str}")
+
+
+def _load_subdomains_from_file(file_path: str) -> List[str]:
+    subdomains = []
+    try:
+        with open(file_path, "r") as f:
+            for line in f:
+                subdomain = line.strip()
+                if subdomain and not subdomain.startswith("#"):
+                    subdomains.append(subdomain)
+        return subdomains
+    except IOError as e:
+        raise ValueError(f"Failed to read dictionary file: {str(e)}")
 
 
 def _display_scan_results(target: str, results: list) -> None:

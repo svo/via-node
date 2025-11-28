@@ -9,9 +9,13 @@ from via_node.domain.repository.network_topology_repository import NetworkTopolo
 
 
 class DiscoverSubdomainsUseCase:
-    def __init__(self, repository: NetworkTopologyRepository) -> None:
+    def __init__(
+        self,
+        repository: NetworkTopologyRepository,
+        subdomains: Optional[List[str]] = None,
+    ) -> None:
         self._repository = repository
-        self._common_subdomains = [
+        self._common_subdomains = subdomains or [
             "www",
             "mail",
             "ftp",

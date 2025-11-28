@@ -41,6 +41,20 @@ class TestDiscoverSubdomainsUseCaseValidation:
         assert_that(use_case._common_subdomains).is_not_empty()
         assert_that(use_case._common_subdomains).contains("www", "api", "mail")
 
+    def test_init_accepts_custom_subdomains(self) -> None:
+        repository = MagicMock(spec=NetworkTopologyRepository)
+        custom_subdomains = ["custom1", "custom2", "custom3"]
+        use_case = DiscoverSubdomainsUseCase(repository, subdomains=custom_subdomains)
+
+        assert_that(use_case._common_subdomains).is_equal_to(custom_subdomains)
+
+    def test_init_uses_default_subdomains_when_none_provided(self) -> None:
+        repository = MagicMock(spec=NetworkTopologyRepository)
+        use_case = DiscoverSubdomainsUseCase(repository, subdomains=None)
+
+        assert_that(use_case._common_subdomains).contains("www", "api", "mail")
+        assert_that(len(use_case._common_subdomains)).is_greater_than(100)
+
 
 class TestDiscoverSubdomainsUseCaseExecution:
     def test_execute_with_found_subdomains(self) -> None:
@@ -139,6 +153,49 @@ class TestDiscoverSubdomainsUseCaseExecution:
 
             assert_that(repository.create_or_update_dns_record_discovery.call_count).is_greater_than(0)
             assert_that(result).is_instance_of(list)
+
+    def test_execute_with_custom_subdomains_list(self) -> None:
+        repository = MagicMock(spec=NetworkTopologyRepository)
+        custom_subdomains = ["custom1", "custom2"]
+        use_case = DiscoverSubdomainsUseCase(repository, subdomains=custom_subdomains)
+
+        expected_discovery = DnsRecordDiscovery(
+            domain_name="custom1.example.com",
+            record_type=DnsRecordType.A,
+            values=["192.168.1.1"],
+            ttl=3600,
+            discovered_at=datetime.now(),
+        )
+        repository.create_or_update_dns_record_discovery.return_value = expected_discovery
+
+        with patch.object(use_case, "_discover_subdomain") as mock_discover:
+            mock_discover.return_value = expected_discovery
+            result = use_case.execute(domain_name="example.com")
+
+            assert_that(mock_discover.call_count).is_equal_to(2)
+            assert_that(result).is_instance_of(list)
+
+    def test_execute_searches_only_custom_subdomains_when_provided(self) -> None:
+        repository = MagicMock(spec=NetworkTopologyRepository)
+        custom_subdomains = ["api", "www"]
+        use_case = DiscoverSubdomainsUseCase(repository, subdomains=custom_subdomains)
+
+        expected_discovery = DnsRecordDiscovery(
+            domain_name="api.example.com",
+            record_type=DnsRecordType.A,
+            values=["192.168.1.1"],
+            ttl=3600,
+            discovered_at=datetime.now(),
+        )
+        repository.create_or_update_dns_record_discovery.return_value = expected_discovery
+
+        with patch.object(use_case, "_discover_subdomain") as mock_discover:
+            mock_discover.return_value = expected_discovery
+            use_case.execute(domain_name="example.com")
+
+            called_domains = [call_args[0][0] for call_args in mock_discover.call_args_list]
+            assert_that(called_domains).contains("api.example.com", "www.example.com")
+            assert_that(len(called_domains)).is_equal_to(2)
 
 
 class TestDiscoverSubdomainsUseCaseDiscovery:
