@@ -2,6 +2,7 @@
 .claude
 .vagrant
 tmp
+prompts
 
 # Temporary and binary files
 *~

@@ -42,6 +42,11 @@
         pkg: netcat-traditional
       become: true
 
+    - name: Install jq for JSON processing
+      ansible.builtin.apt:
+        pkg: jq
+      become: true
+
     - name: Update ~/.profile with default
       ansible.builtin.blockinfile:
         create: true
