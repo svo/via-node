@@ -265,3 +265,98 @@ class TestLoadSubdomainsFromFile:
                 assert_that(False).is_true()
             except ValueError as e:
                 assert_that(str(e)).contains("Failed to read dictionary file")
+
+
+class TestCreateSubdomainUseCase:
+    def test_create_subdomain_use_case_returns_from_container_when_no_dictionary_file(self) -> None:
+        from via_node.interface.cli.main import _create_subdomain_use_case
+        from via_node.application.use_case.discover_subdomains_use_case import DiscoverSubdomainsUseCase
+
+        mock_container = MagicMock()
+        mock_use_case = MagicMock(spec=DiscoverSubdomainsUseCase)
+        mock_container.__getitem__.return_value = mock_use_case
+
+        result = _create_subdomain_use_case(mock_container, dictionary_file=None)
+
+        assert_that(result).is_equal_to(mock_use_case)
+        mock_container.__getitem__.assert_called_once_with(DiscoverSubdomainsUseCase)
+
+    def test_create_subdomain_use_case_creates_use_case_with_custom_subdomains(self) -> None:
+        from via_node.interface.cli.main import _create_subdomain_use_case
+        from via_node.domain.repository.network_topology_repository import NetworkTopologyRepository
+
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as f:
+            f.write("custom1\n")
+            f.write("custom2\n")
+            temp_file = f.name
+
+        try:
+            mock_container = MagicMock()
+            mock_repository = MagicMock(spec=NetworkTopologyRepository)
+            mock_container.__getitem__.return_value = mock_repository
+
+            with patch("via_node.interface.cli.main.DiscoverSubdomainsUseCase") as mock_use_case_class:
+                mock_use_case = MagicMock()
+                mock_use_case_class.return_value = mock_use_case
+
+                result = _create_subdomain_use_case(mock_container, dictionary_file=temp_file)
+
+                assert_that(result).is_equal_to(mock_use_case)
+                mock_use_case_class.assert_called_once()
+                call_kwargs = mock_use_case_class.call_args[1]
+                assert_that(call_kwargs["subdomains"]).is_equal_to(["custom1", "custom2"])
+        finally:
+            os.unlink(temp_file)
+
+
+class TestDisplaySubdomainResults:
+    def test_display_subdomain_results_displays_results(self) -> None:
+        from via_node.interface.cli.main import _display_subdomain_results
+
+        discovery1 = DnsRecordDiscovery(
+            domain_name="www.example.com",
+            record_type=DnsRecordType.A,
+            values=["192.168.1.1"],
+            ttl=3600,
+            discovered_at=datetime.now(),
+        )
+        discovery2 = DnsRecordDiscovery(
+            domain_name="api.example.com",
+            record_type=DnsRecordType.A,
+            values=["192.168.1.2", "192.168.1.3"],
+            ttl=3600,
+            discovered_at=datetime.now(),
+        )
+
+        with patch("click.echo") as mock_echo:
+            _display_subdomain_results("example.com", [discovery1, discovery2])
+
+            assert_that(mock_echo.call_count).is_greater_than(0)
+            calls = [str(call) for call in mock_echo.call_args_list]
+            output = " ".join(calls)
+
+            assert_that(output).contains("Discovered 2 subdomain(s) for example.com")
+            assert_that(output).contains("www.example.com")
+            assert_that(output).contains("192.168.1.1")
+            assert_that(output).contains("api.example.com")
+
+    def test_display_subdomain_results_with_single_result(self) -> None:
+        from via_node.interface.cli.main import _display_subdomain_results
+
+        discovery = DnsRecordDiscovery(
+            domain_name="www.example.com",
+            record_type=DnsRecordType.A,
+            values=["192.168.1.1"],
+            ttl=3600,
+            discovered_at=datetime.now(),
+        )
+
+        with patch("click.echo") as mock_echo:
+            _display_subdomain_results("example.com", [discovery])
+
+            assert_that(mock_echo.call_count).is_greater_than(0)
+            calls = [str(call) for call in mock_echo.call_args_list]
+            output = " ".join(calls)
+
+            assert_that(output).contains("Discovered 1 subdomain(s) for example.com")
+            assert_that(output).contains("www.example.com")

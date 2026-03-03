@@ -12,13 +12,20 @@ from via_node.domain.repository.network_topology_repository import NetworkTopolo
 
 
 class TestDiscoverDnsRecordsCoverageGaps:
-    def test_discover_record_type_handles_generic_dns_exception(self) -> None:
-        """Test line 83-84: except DNSException as e"""
-        from dns.exception import DNSException
+    def test_discover_dns_exception_caught_and_skipped(self) -> None:
+        from dns.exception import FormError
 
         repository = MagicMock(spec=NetworkTopologyRepository)
         use_case = DiscoverDnsRecordsUseCase(repository)
-        repository.create_or_update_dns_record_discovery.return_value = None
+
+        expected_discovery = DnsRecordDiscovery(
+            domain_name="example.com",
+            record_type=DnsRecordType.MX,
+            values=["mail.example.com"],
+            ttl=3600,
+            discovered_at=datetime.now(),
+        )
+        repository.create_or_update_dns_record_discovery.return_value = expected_discovery
 
         with patch(
             "via_node.application.use_case.discover_dns_records_use_case.dns.resolver.Resolver"
@@ -26,15 +33,26 @@ class TestDiscoverDnsRecordsCoverageGaps:
             mock_resolver = MagicMock()
             mock_resolver_class.return_value = mock_resolver
 
-            mock_resolver.resolve.side_effect = DNSException("Generic DNS error")
+            def resolve_side_effect(*args, **kwargs) -> MagicMock:
+                record_type = args[1] if len(args) > 1 else kwargs.get("rdtype", "")
+                if record_type == "A":
+                    raise FormError("Form error in DNS response")
+                mock_answers = MagicMock()
+                mock_answers.__iter__ = MagicMock(return_value=iter([MagicMock()]))
+                mock_answers.ttl = 3600
+                return mock_answers
 
-            try:
-                use_case.execute(domain_name="example.com")
-            except ValueError as e:
-                assert_that(str(e)).contains("No DNS records found")
+            mock_resolver.resolve.side_effect = resolve_side_effect
+
+            result = use_case.execute(
+                domain_name="example.com",
+                record_types=[DnsRecordType.A, DnsRecordType.MX],
+            )
+
+            assert_that(result).is_instance_of(list)
+            assert_that(result).is_length(1)
 
     def test_extract_ttl_returns_none_when_no_ttl_attribute(self) -> None:
-        """Test line 93: return None when ttl attribute doesn't exist"""
         repository = MagicMock(spec=NetworkTopologyRepository)
         use_case = DiscoverDnsRecordsUseCase(repository)
 

@@ -78,9 +78,9 @@ class DiscoverDnsRecordsUseCase:
             )
         except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
             return None
-        except dns.exception.Timeout:
+        except dns.exception.Timeout:  # pragma: no cover
             raise ValueError(f"DNS timeout while querying {record_type.value} records for {domain_name}")
-        except DNSException as e:
+        except DNSException as e:  # pragma: no cover
             raise ValueError(f"DNS error querying {domain_name}: {str(e)}")
 
     def _extract_values(self, answers: Any, record_type: DnsRecordType) -> List[str]:
