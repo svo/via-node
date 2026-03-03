@@ -17,13 +17,14 @@ jobs:
         image: arangodb:3.11.8
         env:
           ARANGO_NO_AUTH: 1
-        options: >-
-          --health-cmd "curl -f http://localhost:8529/_api/version || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
         ports:
           - 8529:8529
+        options: >-
+          --name arangodb
+          --health-interval 30s
+          --health-timeout 10s
+          --health-start-period 40s
+          --health-retries 3
 
     outputs:
       VERSION: ${{ steps.docker-build.outputs.VERSION }}
