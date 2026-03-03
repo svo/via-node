@@ -66,6 +66,7 @@
     - claude-code
     - shellcheck
     - ansible-lint
+    - semgrep
 
   post_tasks:
     - name: Add docker group for user

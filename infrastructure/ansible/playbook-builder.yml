@@ -12,6 +12,7 @@
     - tox
     - shellcheck
     - ansible-lint
+    - semgrep
 
   post_tasks:
     - name: Set python3 as default python
