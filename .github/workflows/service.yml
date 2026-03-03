@@ -19,12 +19,6 @@ jobs:
           ARANGO_NO_AUTH: 1
         ports:
           - 8529:8529
-        options: >-
-          --name arangodb
-          --health-interval 30s
-          --health-timeout 10s
-          --health-start-period 40s
-          --health-retries 3
 
     outputs:
       VERSION: ${{ steps.docker-build.outputs.VERSION }}
@@ -50,6 +44,9 @@ jobs:
           APP_ARANGO_HOST: localhost
           APP_ARANGO_PORT: "8529"
         run: |
+          echo "Waiting for ArangoDB to be ready..."
+          timeout 60 bash -c 'until curl -s http://localhost:8529/_api/version > /dev/null; do sleep 2; done'
+          echo "ArangoDB is ready!"
           ./test.sh
 
       - id: pytest-upload
