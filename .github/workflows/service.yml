@@ -16,7 +16,7 @@ jobs:
       arangodb:
         image: arangodb:3.11.8
         env:
-          ARANGO_ROOT_PASSWORD: ""
+          ARANGO_NO_AUTH: 1
         options: >-
           --health-cmd "arangosh --server.ask-for-password false --server.authentication false --javascript.execute-string \"db._version()\" || exit 1"
           --health-interval 10s
