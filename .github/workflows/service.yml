@@ -12,6 +12,19 @@ jobs:
   build:
     runs-on: [ubuntu-latest]
 
+    services:
+      arangodb:
+        image: arangodb:3.11.8
+        env:
+          ARANGO_ROOT_PASSWORD: ""
+        options: >-
+          --health-cmd "arangosh --server.ask-for-password false --server.authentication false --javascript.execute-string \"db._version()\" || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 8529:8529
+
     outputs:
       VERSION: ${{ steps.docker-build.outputs.VERSION }}
 
@@ -32,6 +45,9 @@ jobs:
       - id: test
         name: Test
         shell: bash
+        env:
+          APP_ARANGO_HOST: localhost
+          APP_ARANGO_PORT: "8529"
         run: |
           ./test.sh
 
