@@ -177,6 +177,70 @@ tox -e cli -- add-host --help
 tox -e cli -- add-dns-resolves-to-host --help
 ```
 
+#### REST API
+
+All CLI commands are also available via REST API endpoints with HTTP Basic authentication.
+
+##### API Endpoints
+
+```
+# Topology CRUD
+POST   /api/v1/hosts                          # Create host
+GET    /api/v1/hosts/{ip}                     # Get host by IP
+POST   /api/v1/edges/domain-port              # Create domain-port edge
+POST   /api/v1/edges/dns-resolves-to-host     # Create DNS-host edge
+GET    /api/v1/ports/{port}/{protocol}        # Get port information
+GET    /api/v1/dns-records/{domain}           # Get DNS record
+
+# Discovery
+POST   /api/v1/discover/dns                   # DNS record discovery
+POST   /api/v1/discover/subdomains            # Subdomain enumeration
+
+# Scanning
+POST   /api/v1/scan/ports                     # Port scanning
+
+# Health
+GET    /health/live                            # Liveness probe
+GET    /health/ready                           # Readiness probe
+```
+
+##### API Examples
+
+```bash
+# Create a host
+curl -u admin:password -X POST http://localhost:8000/api/v1/hosts \
+  -H "Content-Type: application/json" \
+  -d '{"ip_address": "192.168.1.100", "hostname": "server.example.com", "os_type": "Linux"}'
+
+# Discover DNS records
+curl -u admin:password -X POST http://localhost:8000/api/v1/discover/dns \
+  -H "Content-Type: application/json" \
+  -d '{"domain_name": "example.com", "record_types": ["A", "AAAA", "MX"]}'
+
+# Discover subdomains
+curl -u admin:password -X POST http://localhost:8000/api/v1/discover/subdomains \
+  -H "Content-Type: application/json" \
+  -d '{"domain_name": "example.com"}'
+
+# Scan ports
+curl -u admin:password -X POST http://localhost:8000/api/v1/scan/ports \
+  -H "Content-Type: application/json" \
+  -d '{"target": "192.168.1.1", "ports": "22,80,443"}'
+```
+
+##### API Test Scripts
+
+```bash
+# Run topology CRUD tests
+./test-scripts/test_topology_api.sh
+
+# Run discovery & scanning tests
+./test-scripts/test_discovery_api.sh
+
+# Test against custom server with custom credentials
+VIA_NODE_USER=myuser VIA_NODE_PASSWORD=mypass ./test-scripts/test_topology_api.sh http://server:8080
+```
+
 #### Running Tests
 
 ```bash
@@ -416,9 +480,18 @@ project/
         controller/
             coconut_controller.py
             health_controller.py
+            topology_controller.py
+            discovery_controller.py
+            scanning_controller.py
         data_transfer_object/
             coconut_data_transfer_object.py
-            health_status_data_transfer_object.py
+            host_dto.py
+            port_dto.py
+            edge_dto.py
+            dns_record_dto.py
+            dns_discovery_dto.py
+            subdomain_discovery_dto.py
+            port_scan_dto.py
 
  shared/                            # Cross-cutting concerns
     configuration.py

@@ -2,14 +2,36 @@ import sys
 import os
 import json
 
+import pytest
 from assertpy import assert_that
 from fastapi.openapi.utils import get_openapi
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock, MagicMock
 
-from via_node.interface.api.main import app, get_container, global_container, get_global_container, main, run
+from via_node.interface.api.main import app, get_container, get_global_container, initialize_app, lifespan, main, run
 
 OPENAPI_JSON_FILE_PATH = "build/openapi.json"
 OPENAPI_JSON_FILE_PATH_OPEN_FLAG = "w"
+
+
+@pytest.fixture(autouse=True)
+def _initialize_with_mock_arango():
+    import via_node.interface.api.main as main_module
+
+    main_module.global_container = None
+    app.router.routes.clear()
+    app.openapi_schema = None
+
+    with patch(
+        "via_node.interface.api.main.ArangoNetworkTopologyRepository",
+        return_value=MagicMock(),
+    ):
+        initialize_app()
+
+    yield
+
+    main_module.global_container = None
+    app.router.routes.clear()
+    app.openapi_schema = None
 
 
 def create_openapi_json(app):
@@ -47,11 +69,17 @@ class TestMainApp:
         assert_that(app.version).is_equal_to("1.0.0")
 
     def test_should_have_container(self):
-        container = get_container()
+        with patch(
+            "via_node.interface.api.main.ArangoNetworkTopologyRepository",
+            return_value=MagicMock(),
+        ):
+            container = get_container()
 
         assert_that(container).is_not_none()
 
     def test_should_have_global_container(self):
+        from via_node.interface.api.main import global_container
+
         assert_that(global_container).is_not_none()
 
     def test_should_have_create_coconut_route(self):
@@ -69,6 +97,8 @@ class TestMainApp:
         assert_that(paths.get("/coconut/{id}", {})).contains("get")
 
     def test_should_get_global_container(self):
+        from via_node.interface.api.main import global_container
+
         container = get_global_container()
 
         assert_that(container).is_same_as(global_container)
@@ -90,6 +120,30 @@ class TestMainApp:
             reload=True,
             host="0.0.0.0",
         )
+
+    @pytest.mark.anyio
+    async def test_lifespan_initializes_app(self):
+        import via_node.interface.api.main as main_module
+
+        main_module.global_container = None
+
+        with patch(
+            "via_node.interface.api.main.ArangoNetworkTopologyRepository",
+            return_value=MagicMock(),
+        ):
+            async with lifespan(app):
+                assert_that(main_module.global_container).is_not_none()
+
+        main_module.global_container = None
+
+    def test_initialize_app_is_idempotent(self):
+        from via_node.interface.api.main import global_container
+
+        original_container = global_container
+
+        initialize_app()
+
+        assert_that(get_global_container()).is_same_as(original_container)
 
     @patch("via_node.interface.api.main.main")
     def test_run_function(self, mock_main):

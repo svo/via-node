@@ -2,9 +2,27 @@
 
 This directory contains scripts to test the Via Node REST API endpoints.
 
+## Test Scripts
+
+### Topology CRUD (`test_topology_api.sh`)
+
+Tests core topology CRUD API endpoints.
+
+### Discovery & Scanning (`test_discovery_api.sh`)
+
+Tests discovery and scanning API endpoints:
+- ✓ Discover DNS records for a domain
+- ✓ Discover DNS records with specific record types
+- ✓ Invalid record type validation (400)
+- ✓ Discover subdomains
+- ✓ Scan ports with specific ports
+- ✓ Scan ports with default port range
+
+---
+
 ## Bash Test Script (`test_topology_api.sh`)
 
-A comprehensive bash script that tests all topology API endpoints.
+A comprehensive bash script that tests all topology CRUD API endpoints.
 
 **Requirements:**
 - `curl`
@@ -42,6 +60,30 @@ VIA_NODE_USER=myuser VIA_NODE_PASSWORD=mypass ./test_topology_api.sh
 - ✓ Get DNS record
 - ✓ Get non-existent host (404 validation)
 - ✓ Create host with invalid IP (400 validation)
+
+## Bash Test Script (`test_discovery_api.sh`)
+
+A bash script that tests discovery and scanning API endpoints.
+
+**Usage:**
+```bash
+# Test against local server (default: http://localhost:8000)
+./test_discovery_api.sh
+
+# Test against a different server
+./test_discovery_api.sh http://production-server:8080
+
+# Test with custom credentials
+VIA_NODE_USER=myuser VIA_NODE_PASSWORD=mypass ./test_discovery_api.sh
+```
+
+**What it tests:**
+- ✓ Discover DNS records
+- ✓ Discover DNS records with specific types (A, AAAA, MX)
+- ✓ Invalid record type validation (400)
+- ✓ Discover subdomains
+- ✓ Scan ports with specific ports
+- ✓ Scan ports with default range
 
 ## Starting the API Server
 
