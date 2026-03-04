@@ -18,7 +18,7 @@ jobs:
         env:
           ARANGO_NO_AUTH: 1
         ports:
-          - 8529:8529
+          - 8083:8529
 
     outputs:
       VERSION: ${{ steps.docker-build.outputs.VERSION }}
@@ -40,12 +40,9 @@ jobs:
       - id: test
         name: Test
         shell: bash
-        env:
-          APP_ARANGO_HOST: localhost
-          APP_ARANGO_PORT: "8529"
         run: |
           echo "Waiting for ArangoDB to be ready..."
-          timeout 60 bash -c 'until curl -s http://localhost:8529/_api/version > /dev/null; do sleep 2; done'
+          timeout 60 bash -c 'until curl -s http://localhost:8083/_api/version > /dev/null; do sleep 2; done'
           echo "ArangoDB is ready!"
           ./test.sh
 
