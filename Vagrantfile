@@ -29,6 +29,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
 
     development.vm.hostname = 'via-node-vagrant'
+    development.vm.network :forwarded_port, id: 'ssh', guest: 22, host: 2319, host_ip: '127.0.0.1'
 
     development.vm.provision :ansible do |ansible|
       ansible.playbook = PLAYBOOK
@@ -47,11 +48,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       docker.env = {
         "ARANGO_NO_AUTH" => "1"
       }
-    end
-
-    if Vagrant.has_plugin?("vagrant-cachier")
-      graph.cache.scope = :machine
-      graph.cache.enable :apt
     end
 
     graph.vm.hostname = 'via-node-graph'
